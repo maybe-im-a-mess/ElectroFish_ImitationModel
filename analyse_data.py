@@ -88,8 +88,10 @@ def plot_node_locations(node_loc):
     plt.figure()
     plt.plot(node_loc[:, 0, 0], 'y', label='fish-0')
     plt.plot(node_loc[:, 0, 1], 'g', label='fish-1')
+    plt.plot(node_loc[:, 0, 2], 'h', label='fish-2')
     plt.plot(-1 * node_loc[:, 1, 0], 'y')
     plt.plot(-1 * node_loc[:, 1, 1], 'g')
+    plt.plot(-1 * node_loc[:, 1, 2], 'h')
     plt.legend(loc="center right")
     plt.title(f'Tracks')
 
@@ -108,7 +110,7 @@ def plot_node_locations(node_loc):
 # Main execution block
 if __name__ == "__main__":
     # Define the path to the HDF5 file
-    h5_file_path = '/Users/olha/Study/Continual Learning/fish_pairs/Mormyrus_Pair_01/poses/20230316_Mormyrus_Pair_01.000_20230316_Mormyrus_Pair_01.analysis.h5'
+    h5_file_path = '/Users/olha/Study/Continual Learning/fish_pairs/Mormyrus_Pair_02/poses/20230316_Mormyrus_Pair_02.000_20230316_Mormyrus_Pair_02.analysis.h5'
 
     # Ensure the file exists
     if not os.path.exists(h5_file_path):

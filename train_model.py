@@ -1,10 +1,10 @@
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense
-from prepare_data import trainX, trainY, testX, testY
+from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization, Conv1D, MaxPooling1D, Flatten, Bidirectional
+from prepare_data import *
 
 
-def create_lstm_model(input_shape, num_lstm_units):
+def create_lstm_model(input_shape, output_shape, num_lstm_units):
     """
     Function to create an LSTM model.
     
@@ -16,18 +16,35 @@ def create_lstm_model(input_shape, num_lstm_units):
     - tf.keras.Model: Compiled LSTM model.
     """
     model = Sequential([
-        LSTM(num_lstm_units, return_sequences=True, input_shape=input_shape),
-        LSTM(num_lstm_units, return_sequences=True),
-        Dense(input_shape[1], activation='relu')  # Output shape matches input shape
+        LSTM(num_lstm_units, activation='relu', input_shape=input_shape),
+        Dense(output_shape)  
     ])
-    model.compile(loss='mean_squared_error', optimizer='adam')
+    
+    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.001)  # Adjust learning rate
+    model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['accuracy'])
     return model
 
+
+def create_cnn_lstm_model(input_shape, num_lstm_units):
+    model = Sequential([
+        Bidirectional(LSTM(64, return_sequences=True)),
+        Dropout(0.2),
+        Bidirectional(LSTM(64)),
+        Dense(64, activation='relu'),
+        Dropout(0.2),
+        Dense(input_shape[-1], activation='linear')
+    ])
+    model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
+    return model
+
+
 if __name__ == "__main__":
-    input_shape = (trainX.shape[1], trainX.shape[2])
+    input_shape = (3, 24)
+    output_shape = Y.shape[1]
 
     # Create and compile the model
-    model = create_lstm_model(input_shape, 64)
+    model = create_lstm_model(input_shape, output_shape, 50)
 
     # Train the model
-    history = model.fit(trainX, trainY, epochs=100, batch_size=64, validation_split=0.2)
+    model.fit(X_train, Y_train, epochs=50, batch_size=32, validation_split=0.2)
+    

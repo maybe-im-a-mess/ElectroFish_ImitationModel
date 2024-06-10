@@ -1,56 +1,75 @@
 import h5py
 import numpy as np
 import analyse_data
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
-
-def preprocess_sleap_data(h5_file, sequence_length):
+def preprocess_sleap_data(h5_file, window_size=3):
     """
     Preprocess SLEAP analysis data (h5 format) for an ML model.
+    
     Args:
         h5_file (str): Path to the SLEAP analysis file (h5).
-        sequence_length (int): The length of each sequence.
+        window_size (int): Size of the window for sequence generation.
+        fish_index (int): Index of the fish to consider.
+    
     Returns:
-        np.ndarray: Preprocessed data ready for ML model.
+        np.ndarray: Input data (X) and target data (Y) ready for ML model.
     """
     with h5py.File(h5_file, 'r') as f:
         # Load datasets
-        tracks = f["tracks"][:].T  # Transpose to get the shape (num_frames, num_body_parts, num_coords, num_fish)
-        tracks_data_filled = analyse_data.fill_missing(tracks)  # Assuming fill_missing is defined elsewhere
-        node_names = f['node_names'][:].astype(str)
+        tracks = f["tracks"][:].T
+        tracks_data_filled = analyse_data.fill_missing(tracks)
 
     num_frames, num_body_parts, num_coords, num_fish = tracks_data_filled.shape
-    num_features_per_frame = num_body_parts * 3 * num_fish  # 6 body parts * 3 (X, Y, orientation) * 2 fish
 
-    # Initialize the list to hold sequences
-    sequences = []
+    # Initialize lists to hold input-output pairs
+    X = []
+    Y = []
 
-    # Iterate over the frames to create sequences
-    for start_idx in range(0, num_frames - sequence_length + 1):
-        sequence = []
-        for frame_idx in range(start_idx, start_idx + sequence_length):
-            fish_positions = tracks_data_filled[frame_idx]
+    # Loop over each frame, starting from the W-th frame
+    for t in range(window_size, num_frames):
+        # Initialize an empty list to hold the sequence for the current input
+        input_sequence = []
 
-            frame_data = []
-            for fish_idx in range(num_fish):
-                fish_positions_single = fish_positions[:, :, fish_idx]
-                head_index = np.where(node_names == 'head')[0][0]
-                center_index = np.where(node_names == 'middle')[0][0]
-                head_positions = fish_positions_single[head_index]
-                fish_center = fish_positions_single[center_index]
-                fish_direction = head_positions - fish_center
-                fish_orientation = np.arctan2(fish_direction[1], fish_direction[0])
-                fish_orientation_repeated = np.full((num_body_parts, 1), fish_orientation)
-                fish_data = np.concatenate((fish_positions_single, fish_orientation_repeated), axis=1)
-                frame_data.append(fish_data.flatten())
+        # Loop over the window size to gather the past W frames
+        for w in range(t - window_size, t):
+            # Flatten the positions of both fish for the current frame w
+            flattened_frame = []
+            for fish in range(num_fish):
+                for body_part in range(num_body_parts):
+                    flattened_frame.extend(tracks_data_filled[w, body_part, :, fish])
+            
+            # Append the flattened frame to the input sequence
+            input_sequence.append(flattened_frame)
+        
+        # Flatten the input sequence
+        input_sequence = np.concatenate(input_sequence)
+        
+        # Flatten the positions of both fish for the target frame t
+        target_frame = []
+        for fish in range(num_fish):
+            for body_part in range(num_body_parts):
+                target_frame.extend(tracks_data_filled[t, body_part, :, fish])
+        
+        # Append the input sequence and target frame to the lists
+        X.append(input_sequence)
+        Y.append(target_frame)
 
-            sequence.append(np.concatenate(frame_data))
+    # Convert lists to numpy arrays
+    X = np.array(X)
+    Y = np.array(Y)
 
-        sequences.append(sequence)
+    # Reshape X to have the shape (num_samples, W, num_features)
+    num_samples = X.shape[0]
+    num_features = num_body_parts * num_coords * num_fish
+    X = X.reshape((num_samples, window_size, num_features))
 
-    return np.array(sequences)
+    return X, Y
 
 
-def split_data(dataset, train_ratio=0.67):
+def split_data(inputs, outputs, test_size=0.2, random_state=42):
     """
     Split the data into train and test subsets.
     Args:
@@ -59,52 +78,59 @@ def split_data(dataset, train_ratio=0.67):
     Returns:
         tuple: Train and test data ready for ML.
     """
-    train_size = int(len(dataset) * train_ratio)
-    train, test = dataset[:train_size], dataset[train_size:]
-    return train, test
+    X_train, X_test, Y_train, Y_test = train_test_split(inputs, outputs, test_size=test_size, random_state=random_state)
+    return X_train, X_test, Y_train, Y_test
 
 
-def create_and_reshape_dataset(train, test, look_back=1):
+def normalize_data(trainX, trainY):
     """
-    Convert train and test data into dataset matrices and reshape into X=t and Y=t+1.
+    Function to normalize data.
     
     Args:
-        train (np.ndarray): The training dataset for ML.
-        test (np.ndarray): The testing dataset for ML.
-        look_back (int): Number of time steps to look back.
-        
+    - trainX (np.ndarray): Training data.
+    - trainY (np.ndarray): Testing data.
+    
     Returns:
-        tuple: Train and test data ready for ML.
+    - tuple: Normalized training and testing data, scaler used for normalization.
     """
-    def create_dataset(dataset, look_back=1):
-        dataX, dataY = [], []
-        for i in range(len(dataset) - look_back - 1):
-            a = dataset[i: (i+look_back), 0]
-            dataX.append(a)
-            dataY.append(dataset[i + look_back, 0])
-
-        return np.array(dataX), np.array(dataY)
-
-    # Create dataset matrices for train and test data
-    trainX, trainY = create_dataset(train, look_back)
-    testX, testY = create_dataset(test, look_back)
-
-    return trainX, trainY, testX, testY
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    trainX_reshaped = trainX.reshape(trainX.shape[0], -1)
+    trainY_reshaped = trainY.reshape(trainY.shape[0], -1)
+    trainX_normalized = scaler.fit_transform(trainX_reshaped)
+    trainY_normalized = scaler.transform(trainY_reshaped)
+    trainX_normalized = trainX_normalized.reshape(trainX.shape)
+    trainY_normalized = trainY_normalized.reshape(trainY.shape)
+    return trainX_normalized, trainY_normalized, scaler
 
 
-h5_file = '/Users/olha/Study/Continual Learning/fish_pairs/Mormyrus_Pair_01/poses/20230316_Mormyrus_Pair_01.000_20230316_Mormyrus_Pair_01.analysis.h5'
-sequence_length = 10
-preprocessed_data = preprocess_sleap_data(h5_file, sequence_length)
+h5_file1 = '/Users/olha/Study/Continual Learning/fish_pairs/Mormyrus_Pair_01/poses/20230316_Mormyrus_Pair_01.000_20230316_Mormyrus_Pair_01.analysis.h5'
+h5_file2 = '/Users/olha/Study/Continual Learning/fish_pairs/Mormyrus_Pair_02/poses/20230316_Mormyrus_Pair_02.000_20230316_Mormyrus_Pair_02.analysis.h5'
+h5_file3 = '/Users/olha/Study/Continual Learning/fish_pairs/Mormyrus_Pair_03/poses/20230316_Mormyrus_Pair_03.000_20230316_Mormyrus_Pair_03.analysis.h5'
+h5_file4 = '/Users/olha/Study/Continual Learning/fish_pairs/Mormyrus_Pair_04/poses/20230316_Mormyrus_Pair_04.000_20230316_Mormyrus_Pair_04.analysis.h5'
+h5_file5 = '/Users/olha/Study/Continual Learning/fish_pairs/Mormyrus_Pair_05/poses/20230316_Mormyrus_Pair_05.000_20230316_Mormyrus_Pair_05.analysis.h5'
+h5_file6 = '/Users/olha/Study/Continual Learning/fish_pairs/Mormyrus_Pair_06/poses/20230316_Mormyrus_Pair_06.000_20230316_Mormyrus_Pair_06.analysis.h5'
 
-train, test = split_data(preprocessed_data)
-trainX, trainY, testX, testY = create_and_reshape_dataset(train, test)
+X, Y = preprocess_sleap_data(h5_file1)
+X_train, X_test, Y_train, Y_test = split_data(X, Y)
+# preprocessed_data2 = preprocess_sleap_data(h5_file2)
+# preprocessed_data3 = preprocess_sleap_data(h5_file3)
+# preprocessed_data4 = preprocess_sleap_data(h5_file4)
+# preprocessed_data5 = preprocess_sleap_data(h5_file5)
+# preprocessed_data6 = preprocess_sleap_data(h5_file6)
+
+# print(preprocessed_data2.shape)
+# print(preprocessed_data3.shape)
+# print(preprocessed_data4.shape)
+# print(preprocessed_data5.shape)
+# print(preprocessed_data6.shape)
+
+# preprocessed_data = np.concatenate((preprocessed_data1, preprocessed_data2, preprocessed_data3, preprocessed_data4, preprocessed_data5, preprocessed_data6), axis=0)
+
 
 
 if __name__=="__main__":
-    print("preprocessed_data", preprocessed_data.shape)
-    print("train", train.shape)
-    print("test", test.shape)
-    print("trainX", trainX.shape)
-    print("trainY", trainY.shape)
-    print("testX", testX.shape)
-    print("testY", testY.shape)
+    pass
+    # print("preprocessed_data")
+    print(X.shape)
+    print(Y.shape)
+
