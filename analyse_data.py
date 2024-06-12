@@ -1,4 +1,3 @@
-# Import necessary libraries
 import h5py
 import numpy as np
 import seaborn as sns
@@ -7,7 +6,6 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 import os
 
-# Constants
 HEAD_INDEX = 0
 LEFT_FIN = 1
 RIGHT_FIN = 2
@@ -16,7 +14,6 @@ BACK_FIN = 4
 MIDDLE = 5
 
 
-# Function to load the HDF5 file and extract data
 def extract_locations(file_path):
     """
     Load the HDF5 file and extract the track data.
@@ -33,7 +30,7 @@ def extract_locations(file_path):
         print("Tracks shape:", tracks.shape)
     return tracks
 
-# Function to check for missing values (NaNs)
+
 def check_nans(data):
     """
     Check for missing values in the data.
@@ -46,7 +43,7 @@ def check_nans(data):
     """
     return np.isnan(data).sum()
 
-# Function to fill missing values
+
 def fill_missing(data, kind="linear"):
     """
     Fill missing values independently along each dimension after the first.
@@ -74,7 +71,7 @@ def fill_missing(data, kind="linear"):
     data = data.reshape(initial_shape)
     return data
 
-# Function to plot the head locations of the fish
+
 def plot_node_locations(node_loc):
     """
     Plot the locations of certain part of the fish.
@@ -107,27 +104,18 @@ def plot_node_locations(node_loc):
 
     plt.show()
 
-# Main execution block
+
 if __name__ == "__main__":
-    # Define the path to the HDF5 file
     h5_file_path = '/Users/olha/Study/Continual Learning/fish_pairs/Mormyrus_Pair_02/poses/20230316_Mormyrus_Pair_02.000_20230316_Mormyrus_Pair_02.analysis.h5'
 
-    # Ensure the file exists
-    if not os.path.exists(h5_file_path):
-        raise FileNotFoundError(f"HDF5 file not found: {h5_file_path}")
-
-    # Load the HDF5 file
     tracks_data = extract_locations(h5_file_path)
 
-    # Check for missing values
     initial_nans = check_nans(tracks_data)
     print("Initial number of NaN values:", initial_nans)
     tracks_data_filled = fill_missing(tracks_data)
     final_nans = check_nans(tracks_data_filled)
     print("Number of NaN values after filling:", final_nans)
 
-    # Extract head locations
     head_locations = tracks_data_filled[:, HEAD_INDEX, :, :]
 
-    # Plot the head locations
     plot_node_locations(head_locations)
