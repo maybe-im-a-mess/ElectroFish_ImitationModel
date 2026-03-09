@@ -7,7 +7,7 @@
 
 The **ElectroFish** project focuses on studying a unique species of fish equipped with an electric organ. These fish emit electric impulses primarily for communication and navigation. A general goal of this research is to gain deeper insights into the complex social interactions of these fish.
 
-This software project specifically aims to examine and model the behavioral patterns of the fish—encompassing both their physical movement trajectories and their electric signaling—using **Continual Learning** methodologies. 
+This software project specifically aims to examine and model the behavioral patterns of the fish encompassing both their physical movement trajectories and their electric signaling using **Continual Learning** methodologies. 
 
 https://github.com/user-attachments/assets/cd149fc1-f384-4e00-b367-f7bc56347753
 
