@@ -9,8 +9,7 @@ The **ElectroFish** project focuses on studying a unique species of fish equippe
 
 This software project specifically aims to examine and model the behavioral patterns of the fish—encompassing both their physical movement trajectories and their electric signaling—using **Continual Learning** methodologies. 
 
-<video src="https://github.com/maybe-im-a-mess/ElectroFish_ImitationModel/raw/main/ElectroFish.mp4" width="100%" controls autoplay loop muted>
-</video>
+https://github.com/user-attachments/assets/cd149fc1-f384-4e00-b367-f7bc56347753
 
 ## Key Concepts
 
@@ -65,6 +64,12 @@ cd ElectroFish_ImitationModel
 The dataset used for training and evaluating these models contains tracking and signaling data for the fish. 
 
 **[Download the Dataset Here](https://drive.google.com/drive/folders/11kz1BGG4qCm7uGdHDINltBo53fD_YvPD?usp=drive_link)** *(Google Drive Link)*
+
+## Project Results & Presentation
+
+For a detailed breakdown of our findings, behavioral patterns, and the performance of the Continual Learning model, please check out our presentation:
+
+**[View the Results Presentation (PDF)](./ElectroFish_Results.pdf)**
 
 ---
 *Created for the analysis of electric fish behavior using Continual Learning.*
