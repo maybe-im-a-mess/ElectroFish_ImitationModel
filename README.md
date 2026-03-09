@@ -9,6 +9,10 @@ The **ElectroFish** project focuses on studying a unique species of fish equippe
 
 This software project specifically aims to examine and model the behavioral patterns of the fish—encompassing both their physical movement trajectories and their electric signaling—using **Continual Learning** methodologies. 
 
+<video src="./ElectroFish.mp4" width="100%" controls autoplay loop>
+  Your browser does not support the video tag.
+</video>
+
 ## Key Concepts
 
 For human observers, fish behavior can be understood through visible patterns such as varying speeds, swimming angles, or preferred locations within the tank. We capture these behaviors using two main types of features:
